@@ -90,8 +90,7 @@ pub mod unix {
 
     const SHELL_SPECIAL: &'static str = r#" \$'"`!"#;
 
-    /// Escape characters that may have special meaning in a shell,
-    /// including spaces.
+    /// Escape characters that may have special meaning in a shell, including spaces.
     pub fn escape(s: Cow<str>) -> Cow<str> {
         let escape_char = '\\';
         // check if string needs to be escaped
