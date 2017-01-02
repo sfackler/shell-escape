@@ -105,10 +105,13 @@ pub mod unix {
         let mut es = String::with_capacity(s.len() + 2);
         es.push('\'');
         for ch in s.chars() {
-            if ch == '\'' {
-                es.push_str("'\\''");
-            } else {
-                es.push(ch);
+            match ch {
+                '\'' | '!' => {
+                    es.push_str("'\\");
+                    es.push(ch);
+                    es.push('\'');
+                }
+                _ => es.push(ch),
             }
         }
         es.push('\'');
@@ -120,12 +123,9 @@ pub mod unix {
         assert_eq!(escape("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=".into()),
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=");
         assert_eq!(escape("--aaa=bbb-ccc".into()), "--aaa=bbb-ccc");
-        assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()),
-        r#"'linker=gcc -L/foo -Wl,bar'"#);
-        assert_eq!(escape(r#"--features="default""#.into()),
-        r#"'--features="default"'"#);
-        assert_eq!(escape(r#"'!\$`\\\n "#.into()),
-        r#"''\''!\$`\\\n '"#);
+        assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()), r#"'linker=gcc -L/foo -Wl,bar'"#);
+        assert_eq!(escape(r#"--features="default""#.into()), r#"'--features="default"'"#);
+        assert_eq!(escape(r#"'!\$`\\\n "#.into()), r#"''\'''\!'\$`\\\n '"#);
     }
 }
 
