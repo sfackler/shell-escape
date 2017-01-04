@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/sfackler/shell-escape.svg?branch=master)](https://travis-ci.org/sfackler/shell-escape)
 
-[Documentation](https://docs.rs/shell-escape/0.1.0/shell_escape)
+[Documentation](https://docs.rs/shell-escape)
 
 Escape characters that may have a special meaning in a shell.
 
