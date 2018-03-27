@@ -87,35 +87,73 @@ pub mod windows {
 
 /// Unix-specific escaping.
 pub mod unix {
-    use std::borrow::Cow;
+    mod private {
+        /// Putting the actual trait declaration and implementation into a
+        /// private module stops crates other than shell-escape from
+        /// implementing it.
+        pub trait UnixEscape: ToOwned {
+            fn as_bytes(&self) -> &[u8];
+            fn owned_from_bytes(vec: Vec<u8>) -> <Self as ToOwned>::Owned;
+        }
 
-    fn non_whitelisted(ch: char) -> bool {
-        match ch {
-            'a'...'z' | 'A'...'Z' | '0'...'9' | '-' | '_' | '=' | '/' | ',' | '.' | '+' => false,
-            _ => true,
+        impl UnixEscape for str {
+            fn as_bytes(&self) -> &[u8] {
+                self.as_bytes()
+            }
+
+            fn owned_from_bytes(vec: Vec<u8>) -> String {
+                String::from_utf8(vec).unwrap()
+            }
+        }
+
+        impl UnixEscape for [u8] {
+            fn as_bytes(&self) -> &[u8] {
+                self
+            }
+
+            fn owned_from_bytes(vec: Vec<u8>) -> Vec<u8> {
+                vec
+            }
+        }
+    }
+
+    use std::borrow::Cow;
+    use self::private::UnixEscape;
+
+    fn non_whitelisted(ch: &u8) -> bool {
+        #[allow(deprecated, unused_imports)]
+        use std::ascii::AsciiExt;
+
+        match *ch {
+            b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'_' | b'=' | b'/' | b',' | b'.' | b'+' => false,
+            _ => ch.is_ascii()
         }
     }
 
     /// Escape characters that may have special meaning in a shell, including spaces.
-    pub fn escape(s: Cow<str>) -> Cow<str> {
-        if !s.contains(non_whitelisted) {
+    ///
+    /// The private trait UnixEscape is implemented for both `str` and `[u8]` since
+    /// Unix paths are not necessarily valid UTF-8.
+    pub fn escape<'a, T: 'a + ?Sized + UnixEscape>(s: Cow<'a, T>) -> Cow<T> {
+        if !s.as_bytes().iter().any(non_whitelisted) {
             return s;
         }
 
-        let mut es = String::with_capacity(s.len() + 2);
-        es.push('\'');
-        for ch in s.chars() {
-            match ch {
-                '\'' | '!' => {
-                    es.push_str("'\\");
-                    es.push(ch);
-                    es.push('\'');
+        let bytes = s.as_bytes();
+        let mut es = Vec::with_capacity(bytes.len() + 2);
+        es.push(b'\'');
+        for b in bytes {
+            match *b {
+                b'\'' | b'!' => {
+                    es.extend_from_slice(&b"'\\"[..]);
+                    es.push(*b);
+                    es.push(b'\'');
                 }
-                _ => es.push(ch),
+                _ => es.push(*b),
             }
         }
-        es.push('\'');
-        es.into()
+        es.push(b'\'');
+        Cow::Owned(T::owned_from_bytes(es))
     }
 
     #[test]
@@ -128,6 +166,21 @@ pub mod unix {
         assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()), r#"'linker=gcc -L/foo -Wl,bar'"#);
         assert_eq!(escape(r#"--features="default""#.into()), r#"'--features="default"'"#);
         assert_eq!(escape(r#"'!\$`\\\n "#.into()), r#"''\'''\!'\$`\\\n '"#);
+        assert_eq!(escape("Goodbye!".into()), "'Goodbye'\\!''");
+    }
+
+    #[test]
+    fn test_escape_bytes() {
+        assert_eq!(
+            escape((&b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"[..]).into()),
+            &b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"[..]
+        );
+        assert_eq!(escape((&b"--aaa=bbb-ccc"[..]).into()), &b"--aaa=bbb-ccc"[..]);
+        assert_eq!(escape((&b"linker=gcc -L/foo -Wl,bar"[..]).into()), &br#"'linker=gcc -L/foo -Wl,bar'"#[..]);
+        assert_eq!(escape((&br#"--features="default""#[..]).into()), &br#"'--features="default"'"#[..]);
+        assert_eq!(escape((&br#"'!\$`\\\n "#[..]).into()), &br#"''\'''\!'\$`\\\n '"#[..]);
+        assert_eq!(escape((&b"Tsch\xfc\xdf"[..]).into()), &b"Tsch\xfc\xdf"[..]);
+        assert_eq!(escape((&b"Tsch\xfc\xdf!"[..]).into()), &b"'Tsch\xfc\xdf'\\!''"[..]);
     }
 }
 
