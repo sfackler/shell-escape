@@ -121,6 +121,8 @@ pub mod unix {
     use self::private::UnixEscape;
 
     fn non_whitelisted(ch: &u8) -> bool {
+        use std::ascii::AsciiExt;
+
         match *ch {
             b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'_' | b'=' | b'/' | b',' | b'.' | b'+' => false,
             _ => ch.is_ascii()
@@ -131,7 +133,7 @@ pub mod unix {
     ///
     /// The private trait UnixEscape is implemented for both `str` and `[u8]` since
     /// Unix paths are not necessarily valid UTF-8.
-    pub fn escape<'a, T>(s: Cow<'a, T>) -> Cow<T> where T: 'a + UnixEscape + ?Sized {
+    pub fn escape<'a, T: 'a + ?Sized + UnixEscape>(s: Cow<'a, T>) -> Cow<T> {
         if !s.as_bytes().iter().any(non_whitelisted) {
             return s;
         }
