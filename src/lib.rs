@@ -121,6 +121,7 @@ pub mod unix {
     use self::private::UnixEscape;
 
     fn non_whitelisted(ch: &u8) -> bool {
+        #[allow(unused_imports)]
         use std::ascii::AsciiExt;
 
         match *ch {
