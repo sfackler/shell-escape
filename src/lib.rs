@@ -33,7 +33,7 @@ pub mod windows {
     ///
     /// [msdn]: http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
     pub fn escape(s: Cow<str>) -> Cow<str> {
-        let mut needs_escape = false;
+        let mut needs_escape = s.is_empty();
         for ch in s.chars() {
             match ch {
                 '"' | '\t' | '\n' | ' ' => needs_escape = true,
@@ -82,6 +82,7 @@ pub mod windows {
         r#""--features=\"default\"""#);
         assert_eq!(escape(r#"\path\to\my documents\"#.into()),
         r#""\path\to\my documents\\""#);
+        assert_eq!(escape("".into()), r#""""#);
     }
 }
 
@@ -98,7 +99,7 @@ pub mod unix {
 
     /// Escape characters that may have special meaning in a shell, including spaces.
     pub fn escape(s: Cow<str>) -> Cow<str> {
-        if !s.contains(non_whitelisted) {
+        if !s.is_empty() && !s.contains(non_whitelisted) {
             return s;
         }
 
@@ -128,6 +129,7 @@ pub mod unix {
         assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()), r#"'linker=gcc -L/foo -Wl,bar'"#);
         assert_eq!(escape(r#"--features="default""#.into()), r#"'--features="default"'"#);
         assert_eq!(escape(r#"'!\$`\\\n "#.into()), r#"''\'''\!'\$`\\\n '"#);
+        assert_eq!(escape("".into()), r#"''"#);
     }
 }
 
