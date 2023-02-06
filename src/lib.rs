@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //! Escape characters that may have special meaning in a shell.
-#![doc(html_root_url="https://docs.rs/shell-escape/0.1")]
+#![doc(html_root_url = "https://docs.rs/shell-escape/0.1")]
 
 use std::borrow::Cow;
 use std::env;
@@ -52,7 +52,7 @@ pub mod windows {
             }
         }
         if !needs_escape {
-            return s
+            return s;
         }
         let mut es = String::with_capacity(s.len());
         es.push('"');
@@ -78,7 +78,6 @@ pub mod windows {
                     break;
                 }
             }
-
         }
         es.push('"');
         es.into()
@@ -91,12 +90,18 @@ pub mod windows {
         #[test]
         fn test_escape() {
             assert_eq!(escape("--aaa=bbb-ccc".into()), "--aaa=bbb-ccc");
-            assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()),
-            r#""linker=gcc -L/foo -Wl,bar""#);
-            assert_eq!(escape(r#"--features="default""#.into()),
-            r#""--features=\"default\"""#);
-            assert_eq!(escape(r#"\path\to\my documents\"#.into()),
-            r#""\path\to\my documents\\""#);
+            assert_eq!(
+                escape("linker=gcc -L/foo -Wl,bar".into()),
+                r#""linker=gcc -L/foo -Wl,bar""#
+            );
+            assert_eq!(
+                escape(r#"--features="default""#.into()),
+                r#""--features=\"default\"""#
+            );
+            assert_eq!(
+                escape(r#"\path\to\my documents\"#.into()),
+                r#""\path\to\my documents\\""#
+            );
             assert_eq!(escape("".into()), r#""""#);
         }
     }
@@ -139,22 +144,27 @@ pub mod unix {
 
     #[cfg(test)]
     mod tests {
-        use super::{
-            escape, 
-            escape_os_str
-        };
-        use std::os::unix::ffi::OsStrExt;
+        use super::{escape, escape_os_str};
         use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
 
         #[test]
         fn test_escape() {
             assert_eq!(
-                escape("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+".into()),
+                escape(
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+".into()
+                ),
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"
             );
             assert_eq!(escape("--aaa=bbb-ccc".into()), "--aaa=bbb-ccc");
-            assert_eq!(escape("linker=gcc -L/foo -Wl,bar".into()), r#"'linker=gcc -L/foo -Wl,bar'"#);
-            assert_eq!(escape(r#"--features="default""#.into()), r#"'--features="default"'"#);
+            assert_eq!(
+                escape("linker=gcc -L/foo -Wl,bar".into()),
+                r#"'linker=gcc -L/foo -Wl,bar'"#
+            );
+            assert_eq!(
+                escape(r#"--features="default""#.into()),
+                r#"'--features="default"'"#
+            );
             assert_eq!(escape(r#"'!\$`\\\n "#.into()), r#"''\'''\!'\$`\\\n '"#);
             assert_eq!(escape("".into()), r#"''"#);
         }
