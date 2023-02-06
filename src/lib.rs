@@ -112,10 +112,7 @@ pub mod unix {
     };
 
     fn non_whitelisted(ch: char) -> bool {
-        match ch {
-            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '=' | '/' | ',' | '.' | '+' => false,
-            _ => true,
-        }
+        !matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '=' | '/' | ',' | '.' | '+')
     }
 
     /// Escape characters that may have special meaning in a shell, including spaces.
