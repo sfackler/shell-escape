@@ -142,6 +142,38 @@ pub mod unix {
         es.into()
     }
 
+    fn allowed(byte: u8) -> bool {
+        matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'=' | b'/' | b',' | b'.' | b'+')
+    }
+
+    /// Escape characters that may have special meaning in a shell, including spaces.
+    /// Work with `OsStr` instead of `str`.
+    pub fn escape_os_str(s: &OsStr) -> Cow<'_, OsStr> {
+        let as_bytes = s.as_bytes();
+        let all_whitelisted = as_bytes.iter().copied().all(allowed);
+
+        if !as_bytes.is_empty() && all_whitelisted {
+            return Cow::Borrowed(s);
+        }
+
+        let mut escaped = Vec::with_capacity(as_bytes.len() + 2);
+        escaped.push(b'\'');
+
+        for &b in as_bytes {
+            match b {
+                b'\'' | b'!' => {
+                    escaped.reserve(4);
+                    escaped.push(b'\'');
+                    escaped.push(b'\\');
+                    escaped.push(b);
+                    escaped.push(b'\'');
+                }
+                _ => escaped.push(b),
+            }
+        }
+        escaped.push(b'\'');
+        OsString::from_vec(escaped).into()
+    }
     #[cfg(test)]
     mod tests {
         use super::{escape, escape_os_str};
@@ -203,36 +235,4 @@ pub mod unix {
         }
     }
 
-    fn allowed(byte: u8) -> bool {
-        matches!(byte, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'=' | b'/' | b',' | b'.' | b'+')
-    }
-
-    /// Escape characters that may have special meaning in a shell, including spaces.
-    /// Work with `OsStr` instead of `str`.
-    pub fn escape_os_str(s: &OsStr) -> Cow<'_, OsStr> {
-        let as_bytes = s.as_bytes();
-        let all_whitelisted = as_bytes.iter().copied().all(allowed);
-
-        if !as_bytes.is_empty() && all_whitelisted {
-            return Cow::Borrowed(s);
-        }
-
-        let mut escaped = Vec::with_capacity(as_bytes.len() + 2);
-        escaped.push(b'\'');
-
-        for &b in as_bytes {
-            match b {
-                b'\'' | b'!' => {
-                    escaped.reserve(4);
-                    escaped.push(b'\'');
-                    escaped.push(b'\\');
-                    escaped.push(b);
-                    escaped.push(b'\'');
-                }
-                _ => escaped.push(b),
-            }
-        }
-        escaped.push(b'\'');
-        OsString::from_vec(escaped).into()
-    }
 }
