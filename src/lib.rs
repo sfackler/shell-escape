@@ -182,25 +182,43 @@ pub mod unix {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
 
-        #[test]
-        fn test_escape() {
-            assert_eq!(
-                escape(
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+".into()
-                ),
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"
-            );
-            assert_eq!(escape("--aaa=bbb-ccc".into()), "--aaa=bbb-ccc");
-            assert_eq!(
-                escape("linker=gcc -L/foo -Wl,bar".into()),
-                r#"'linker=gcc -L/foo -Wl,bar'"#
-            );
-            assert_eq!(
-                escape(r#"--features="default""#.into()),
-                r#"'--features="default"'"#
-            );
-            assert_eq!(escape(r#"'!\$`\\\n "#.into()), r#"''\'''\!'\$`\\\n '"#);
-            assert_eq!(escape("".into()), r#"''"#);
+        #[test_case::test_case(
+            " ",
+            r#"' '"#
+            ; "Space is escaped by wrapping it in single quotes."
+        )]
+        #[test_case::test_case(
+            "",
+            r#"''"#
+            ; "Empty string is escaped by wrapping it in single quotes."
+        )]
+        #[test_case::test_case(
+            r#"'!\$`\\\n "#, 
+            r#"''\'''\!'\$`\\\n '"#
+            ; "Text with a mix of characters that require escaping are individually escaped as well as wrapping the whole thing in single quotes."
+        )]
+        #[test_case::test_case(
+            r#"--features="default""#,
+            r#"'--features="default"'"#
+            ; "Text with a double quote is escaped by wrapping it all in single quotes."
+        )]
+        #[test_case::test_case(
+            "linker=gcc -L/foo -Wl,bar",
+            r#"'linker=gcc -L/foo -Wl,bar'"#
+            ; "Text with a slash is escaped by wrapping it all in single quotes."
+        )]
+        #[test_case::test_case(
+            "--aaa=bbb-ccc",
+            "--aaa=bbb-ccc"
+            ; "a flag built up entirely of allowed characters is not escaped."
+        )]
+        #[test_case::test_case(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+",
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"
+            ; "all allowed characters that do not require escaping are not escaped"
+        )]
+        fn test_escape(input: &str, expected: &str) {
+            assert_eq!(escape(input.into()), expected);
         }
 
         #[test_case::test_case(
