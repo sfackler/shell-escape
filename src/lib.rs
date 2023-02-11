@@ -176,6 +176,8 @@ pub mod unix {
     }
     #[cfg(test)]
     mod tests {
+        extern crate test_case;
+
         use super::{escape, escape_os_str};
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
@@ -201,37 +203,58 @@ pub mod unix {
             assert_eq!(escape("".into()), r#"''"#);
         }
 
-        fn test_escape_os_str_case(input: &str, expected: &str) {
-            test_escape_os_str_from_bytes(input.as_bytes(), expected.as_bytes())
+        #[test_case::test_case(
+            " ",
+            r#"' '"#
+            ; "Space is escaped by wrapping it in single quotes."
+        )]
+        #[test_case::test_case(
+            "",
+            r#"''"#
+            ; "Empty string is escaped by wrapping it in single quotes."
+        )]
+        #[test_case::test_case(
+            r#"'!\$`\\\n "#, 
+            r#"''\'''\!'\$`\\\n '"#
+            ; "Text with a mix of characters that require escaping are individually escaped as well as wrapping the whole thing in single quotes."
+        )]
+        #[test_case::test_case(
+            r#"--features="default""#,
+            r#"'--features="default"'"#
+            ; "Text with a double quote is escaped by wrapping it all in single quotes."
+        )]
+        #[test_case::test_case(
+            "linker=gcc -L/foo -Wl,bar",
+            r#"'linker=gcc -L/foo -Wl,bar'"#
+            ; "Text with a slash is escaped by wrapping it all in single quotes."
+        )]
+        #[test_case::test_case(
+            "--aaa=bbb-ccc",
+            "--aaa=bbb-ccc"
+            ; "a flag built up entirely of allowed characters is not escaped."
+        )]
+        #[test_case::test_case(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+",
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+"
+            ; "all allowed characters that do not require escaping are not escaped"
+        )]
+        fn test_escape_os_str(input: &str, expected: &str) {
+            let input_os_str = OsStr::from_bytes(input.as_bytes());
+            let observed_os_str = escape_os_str(input_os_str);
+            let expected_os_str = OsStr::from_bytes(expected.as_bytes());
+            assert_eq!(observed_os_str, expected_os_str);
         }
 
+        #[test_case::test_case(
+            &[0x66, 0x6f, 0x80, 0x6f],
+            &[b'\'', 0x66, 0x6f, 0x80, 0x6f, b'\'']
+            ; "Bytes that are not valid UTF-8 are escaped by wrapping them in single quotes."
+        )]
         fn test_escape_os_str_from_bytes(input: &[u8], expected: &[u8]) {
             let input_os_str = OsStr::from_bytes(input);
             let observed_os_str = escape_os_str(input_os_str);
             let expected_os_str = OsStr::from_bytes(expected);
             assert_eq!(observed_os_str, expected_os_str);
-        }
-
-        #[test]
-        fn test_escape_os_str() {
-            test_escape_os_str_case(
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+",
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=/,.+",
-            );
-            test_escape_os_str_case("--aaa=bbb-ccc", "--aaa=bbb-ccc");
-            test_escape_os_str_case(
-                "linker=gcc -L/foo -Wl,bar",
-                r#"'linker=gcc -L/foo -Wl,bar'"#,
-            );
-            test_escape_os_str_case(r#"--features="default""#, r#"'--features="default"'"#);
-            test_escape_os_str_case(r#"'!\$`\\\n "#, r#"''\'''\!'\$`\\\n '"#);
-            test_escape_os_str_case("", r#"''"#);
-            test_escape_os_str_case(" ", r#"' '"#);
-
-            test_escape_os_str_from_bytes(
-                &[0x66, 0x6f, 0x80, 0x6f],
-                &[b'\'', 0x66, 0x6f, 0x80, 0x6f, b'\''],
-            );
         }
     }
 

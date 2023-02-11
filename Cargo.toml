@@ -7,3 +7,6 @@ repository = "https://github.com/sfackler/shell-escape"
 description = "Escape characters that may have a special meaning in a shell"
 
 [dependencies]
+
+[dev-dependencies]
+test-case = "2.2.2"
