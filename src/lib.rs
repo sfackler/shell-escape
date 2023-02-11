@@ -86,23 +86,35 @@ pub mod windows {
     #[cfg(test)]
     mod tests {
         use super::*;
+        extern crate test_case;
 
-        #[test]
-        fn test_escape() {
-            assert_eq!(escape("--aaa=bbb-ccc".into()), "--aaa=bbb-ccc");
-            assert_eq!(
-                escape("linker=gcc -L/foo -Wl,bar".into()),
-                r#""linker=gcc -L/foo -Wl,bar""#
-            );
-            assert_eq!(
-                escape(r#"--features="default""#.into()),
-                r#""--features=\"default\"""#
-            );
-            assert_eq!(
-                escape(r#"\path\to\my documents\"#.into()),
-                r#""\path\to\my documents\\""#
-            );
-            assert_eq!(escape("".into()), r#""""#);
+        #[test_case::test_case(
+            r#""""#,
+            r#""\"\"""#
+            ; "an empty string is escaped by surrounding with double quotes."
+        )]
+        #[test_case::test_case(
+            r#""--features=\"default\"""#,
+            r#""\"--features=\\\"default\\\"\"""#
+            ; "a flag with quotes is escaped by surrounding with double quotes."
+        )]
+        #[test_case::test_case(
+            r#"linker=gcc -L/foo -Wl,bar"#,
+            r#""linker=gcc -L/foo -Wl,bar""#
+            ; "a flag with spaces is escaped by surrounding with double quotes."
+        )]
+        #[test_case::test_case(
+            r#"\path\to\my documents\"#,
+            r#""\path\to\my documents\\""#
+            ; "a path with spaces is escaped by surrounding with double quotes."
+        )]
+        #[test_case::test_case(
+            "--aaa=bbb-ccc",
+            "--aaa=bbb-ccc"
+            ; "a flag built up entirely of allowed characters is not escaped."
+        )]
+        fn test_escape(input: &str, expected: &str) {
+            assert_eq!(escape(input.into()), expected);
         }
     }
 }
@@ -275,5 +287,4 @@ pub mod unix {
             assert_eq!(observed_os_str, expected_os_str);
         }
     }
-
 }
