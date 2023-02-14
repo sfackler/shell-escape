@@ -11,7 +11,7 @@
 #![doc(html_root_url = "https://docs.rs/shell-escape/0.1")]
 
 #[cfg(unix)]
-mod unix;
+pub mod unix;
 
 #[cfg(unix)]
 pub use unix::{
@@ -20,7 +20,7 @@ pub use unix::{
 };
 
 #[cfg(windows)]
-mod windows;
+pub mod windows;
 
 #[cfg(windows)]
 pub use windows::{

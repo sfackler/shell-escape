@@ -16,14 +16,13 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
         return s;
     }
 
-    let mut es = String::with_capacity(s.len());
+    let mut es = String::with_capacity(s.len() + 2);
     es.push('"');
     
     let mut chars = s.chars().peekable();
     loop {
         let mut nslashes = 0;
-        while let Some(&'\\') = chars.peek() {
-            chars.next();
+        while let Some(_) = chars.next_if_eq(&'\\') {
             nslashes += 1;
         }
 
@@ -62,13 +61,10 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
 /// assert!(!needs_escape(b'\\' as u16));
 /// ```
 pub fn needs_escape(wide_byte: u16) -> bool {
-    let (high, low) = ((wide_byte >> 8) as u8, (wide_byte & 0xFF) as u8);
-
-    if high > 0 {
-        // High byte is set, so its not an ASCII character and definitely needs escaping.
-        return true;
+    match char::from_u32(wide_byte as u32) {
+        Some(c) => matches!(c, '"' | '\t' | '\n' | ' '), // only tabs, newlines, spaces, and double quotes need to be escaped
+        None => true
     }
-    matches!(low, b'"' | b'\t' | b'\n' | b' ')
 }
 
 /// Escape OsStr for the windows cmd.exe shell.
@@ -86,26 +82,21 @@ pub fn needs_escape(wide_byte: u16) -> bool {
 /// ```
 /// [msdn]: http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
 pub fn escape_os_str(s: &OsStr) -> Cow<'_, OsStr> {
-    let encoded: Vec<u16> = s.encode_wide().collect();
-    let needs_escaping = encoded.iter().copied().any(needs_escape);
+    let encoded = s.encode_wide();
+    let needs_escaping = encoded.clone().any(needs_escape);
 
     if s.is_empty() || !needs_escaping {
         return Cow::Borrowed(s);
     }
 
-    let mut escaped = Vec::with_capacity(encoded.len() + 2);
+    let mut escaped = Vec::with_capacity(s.len() + 2);
     escaped.push(b'"' as u16);
 
     let mut chars = encoded.into_iter().peekable();
     loop {
         let mut nslashes = 0;
-        while let Some(&c) = chars.peek() {
-            if c == (b'\\' as u16) {
-                chars.next();
-                nslashes += 1;
-            } else {
-                break;
-            }
+        while let Some(_) = chars.next_if_eq(&(b'\\' as u16)) {
+            nslashes += 1;
         }
         match chars.next() {
             Some(c) if c == b'"' as u16 => {
@@ -198,12 +189,15 @@ mod tests {
         assert_eq!(observed_os_str, expected_os_str);
     }
 
-    /// FIXME: Need to fix this test case.
-    /// I'm not sure what we're expecting to happen here.
     #[test_case::test_case(
         &[0x1055, 0x006E, 0x0069, 0x0063, 0x006F, 0x0064, 0x0065],
         &[0x1055, 0x006E, 0x0069, 0x0063, 0x006F, 0x0064, 0x0065]
-        ; "A u16 with high byte set requires escaping."
+        ; "u16 (as u32) that are valid chars are not escaped unless they are a double quote, space, backslash, newline, or a tab."
+    )]
+    #[test_case::test_case(
+        &[0xD801, 0x006E, 0x0069, 0x0063, 0x006F, 0x0064, 0x0065],
+        &[b'"' as u16, 0xD801, 0x006E, 0x0069, 0x0063, 0x006F, 0x0064, 0x0065, b'"' as u16]
+        ; "a 16-bit number that is not a valid char when seen as a u32 is escaped by surrounding with double quotes."
     )]
     fn test_escape_os_str_from_bytes(input: &[u16], expected: &[u16]) {
         let binding = OsString::from_wide(input);
