@@ -73,7 +73,7 @@ pub fn needs_escape(wide_byte: u16) -> bool {
 ///
 /// Example:
 /// ```
-/// use shell_escape::windows::escape_os_str;
+/// use shell_escape::escape_os_str;
 /// use std::ffi::OsStr;
 ///
 /// let s = OsStr::new("foo bar");
