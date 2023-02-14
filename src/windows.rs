@@ -11,18 +11,14 @@ use std::os::windows::ffi::{OsStrExt, OsStringExt};
 ///
 /// [msdn]: http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
 pub fn escape(s: Cow<str>) -> Cow<str> {
-    let mut needs_escape = s.is_empty();
-    for ch in s.chars() {
-        match ch {
-            '"' | '\t' | '\n' | ' ' => needs_escape = true,
-            _ => {}
-        }
-    }
-    if !needs_escape {
+    let needs_escape = s.chars().any(|c| matches!(c, '"' | '\t' | '\n' | ' '));
+    if s.is_empty() || !needs_escape {
         return s;
     }
+    
     let mut es = String::with_capacity(s.len());
     es.push('"');
+    
     let mut chars = s.chars().peekable();
     loop {
         let mut nslashes = 0;
@@ -33,14 +29,17 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
 
         match chars.next() {
             Some('"') => {
+                es.reserve(nslashes * 2 + 1);
                 es.extend(repeat('\\').take(nslashes * 2 + 1));
                 es.push('"');
             }
             Some(c) => {
+                es.reserve(nslashes);
                 es.extend(repeat('\\').take(nslashes));
                 es.push(c);
             }
             None => {
+                es.reserve(nslashes * 2);
                 es.extend(repeat('\\').take(nslashes * 2));
                 break;
             }
