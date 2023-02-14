@@ -18,7 +18,7 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
 
     let mut es = String::with_capacity(s.len() + 2);
     es.push('"');
-    
+
     let mut chars = s.chars().peekable();
     loop {
         let mut nslashes = 0;
@@ -63,7 +63,7 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
 pub fn needs_escape(wide_byte: u16) -> bool {
     match char::from_u32(wide_byte as u32) {
         Some(c) => matches!(c, '"' | '\t' | '\n' | ' '), // only tabs, newlines, spaces, and double quotes need to be escaped
-        None => true
+        None => true,
     }
 }
 

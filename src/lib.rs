@@ -14,16 +14,10 @@
 pub mod unix;
 
 #[cfg(unix)]
-pub use unix::{
-    escape,
-    escape_os_str
-};
+pub use unix::{escape, escape_os_str};
 
 #[cfg(windows)]
 pub mod windows;
 
 #[cfg(windows)]
-pub use windows::{
-    escape, 
-    escape_os_str
-};
+pub use windows::{escape, escape_os_str};

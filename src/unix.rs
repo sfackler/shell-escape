@@ -1,5 +1,5 @@
 //! Unix-specific escaping.
-//! 
+//!
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
