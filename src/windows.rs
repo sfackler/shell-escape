@@ -22,7 +22,7 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
     let mut chars = s.chars().peekable();
     loop {
         let mut nslashes = 0;
-        while let Some(_) = chars.next_if_eq(&'\\') {
+        while chars.next_if_eq(&'\\').is_some() {
             nslashes += 1;
         }
 
@@ -95,7 +95,7 @@ pub fn escape_os_str(s: &OsStr) -> Cow<'_, OsStr> {
     let mut chars = encoded.into_iter().peekable();
     loop {
         let mut nslashes = 0;
-        while let Some(_) = chars.next_if_eq(&(b'\\' as u16)) {
+        while chars.next_if_eq(&(b'\\' as u16)).is_some() {
             nslashes += 1;
         }
         match chars.next() {
