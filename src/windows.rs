@@ -15,7 +15,7 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
     if s.is_empty() || !needs_escape {
         return s;
     }
-    
+
     let mut es = String::with_capacity(s.len());
     es.push('"');
     
@@ -29,12 +29,12 @@ pub fn escape(s: Cow<str>) -> Cow<str> {
 
         match chars.next() {
             Some('"') => {
-                es.reserve(nslashes * 2 + 1);
+                es.reserve(nslashes * 2 + 2);
                 es.extend(repeat('\\').take(nslashes * 2 + 1));
                 es.push('"');
             }
             Some(c) => {
-                es.reserve(nslashes);
+                es.reserve(nslashes + 1);
                 es.extend(repeat('\\').take(nslashes));
                 es.push(c);
             }
@@ -109,12 +109,12 @@ pub fn escape_os_str(s: &OsStr) -> Cow<'_, OsStr> {
         }
         match chars.next() {
             Some(c) if c == b'"' as u16 => {
-                escaped.reserve(nslashes * 2 + 1);
+                escaped.reserve(nslashes * 2 + 2);
                 escaped.extend(repeat(b'\\' as u16).take(nslashes * 2 + 1));
                 escaped.push(b'"' as u16);
             }
             Some(c) => {
-                escaped.reserve(nslashes);
+                escaped.reserve(nslashes + 1);
                 escaped.extend(repeat(b'\\' as u16).take(nslashes));
                 escaped.push(c);
             }
