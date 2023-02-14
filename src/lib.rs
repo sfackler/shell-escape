@@ -10,32 +10,24 @@
 //! Escape characters that may have special meaning in a shell.
 #![doc(html_root_url = "https://docs.rs/shell-escape/0.1")]
 
-
 #[cfg(unix)]
-pub use unix::escape_os_str as escape_os_str;
+pub use unix::escape;
 #[cfg(unix)]
-pub use unix::escape as escape;
+pub use unix::escape_os_str;
 
 #[cfg(windows)]
-pub use windows::escape as escape;
+pub use windows::escape;
 #[cfg(windows)]
-pub use windows::escape_os_str as escape_os_str;
-
+pub use windows::escape_os_str;
 
 #[cfg(windows)]
 /// Windows-specific escaping.
 pub mod windows {
     use std::borrow::Cow;
-    use std::ffi::{
-        OsStr, 
-        OsString
-    };
+    use std::ffi::{OsStr, OsString};
     use std::iter::repeat;
 
-    use std::os::windows::ffi::{
-        OsStrExt, 
-        OsStringExt
-    };
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
     /// Escape for the windows cmd.exe shell.
     ///
@@ -82,13 +74,12 @@ pub mod windows {
         es.into()
     }
 
-
     /// Determine if a wide byte needs to be escaped.
     /// Only tabs, newlines, spaces, and double quotes need to be escaped.
     /// Example:
     /// ```
     /// use shell_escape::windows::needs_escape;
-    /// 
+    ///
     /// assert!(needs_escape(b'"' as u16));
     /// assert!(needs_escape(b'\t' as u16));
     /// assert!(needs_escape(b'\n' as u16));
@@ -96,17 +87,13 @@ pub mod windows {
     /// assert!(!needs_escape(b'\\' as u16));
     /// ```
     pub fn needs_escape(wide_byte: u16) -> bool {
-
         let (high, low) = ((wide_byte >> 8) as u8, (wide_byte & 0xFF) as u8);
 
         if high > 0 {
             // High byte is set, so its not an ASCII character and definitely needs escaping.
             return true;
         }
-        matches!(
-            low, 
-            b'"' | b'\t' | b'\n' | b' '
-        )
+        matches!(low, b'"' | b'\t' | b'\n' | b' ')
     }
 
     /// Escape OsStr for the windows cmd.exe shell.
@@ -117,7 +104,7 @@ pub mod windows {
     /// ```
     /// use shell_escape::windows::escape_os_str;
     /// use std::ffi::OsStr;
-    /// 
+    ///
     /// let s = OsStr::new("foo bar");
     /// let escaped = escape_os_str(s);
     /// assert_eq!(escaped, OsStr::new(r#""foo bar""#));
@@ -150,12 +137,12 @@ pub mod windows {
                     escaped.reserve(nslashes * 2 + 1);
                     escaped.extend(repeat(b'\\' as u16).take(nslashes * 2 + 1));
                     escaped.push(b'"' as u16);
-                },
+                }
                 Some(c) => {
                     escaped.reserve(nslashes);
                     escaped.extend(repeat(b'\\' as u16).take(nslashes));
                     escaped.push(c);
-                },
+                }
                 None => {
                     escaped.reserve(nslashes * 2);
                     escaped.extend(repeat(b'\\' as u16).take(nslashes * 2));
@@ -236,7 +223,7 @@ pub mod windows {
             assert_eq!(observed_os_str, expected_os_str);
         }
 
-        /// FIXME: Need to fix this test case. 
+        /// FIXME: Need to fix this test case.
         /// I'm not sure what we're expecting to happen here.
         #[test_case::test_case(
             &[0x1055, 0x006E, 0x0069, 0x0063, 0x006F, 0x0064, 0x0065],
@@ -260,10 +247,7 @@ pub mod unix {
     use std::{
         borrow::Cow,
         ffi::{OsStr, OsString},
-        os::unix::ffi::{
-            OsStrExt,
-            OsStringExt
-        }
+        os::unix::ffi::{OsStrExt, OsStringExt},
     };
 
     fn non_whitelisted(ch: char) -> bool {
