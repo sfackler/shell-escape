@@ -5,14 +5,22 @@ use std::ffi::{OsStr, OsString};
 use std::iter::repeat;
 use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
+fn non_whitelisted(c: char) -> bool {
+    !matches!(c, '"' | '\t' | '\n' | ' ')
+}
+
 /// Escape for the windows cmd.exe shell.
 ///
 /// See [here][msdn] for more information.
 ///
 /// [msdn]: http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx
 pub fn escape(s: Cow<str>) -> Cow<str> {
-    let needs_escape = s.chars().any(|c| matches!(c, '"' | '\t' | '\n' | ' '));
-    if s.is_empty() || !needs_escape {
+    if s.is_empty() {
+        return "\"\"".to_string().into();
+    }
+
+    let needs_escape = s.chars().any(non_whitelisted);
+    if !needs_escape {
         return s;
     }
 

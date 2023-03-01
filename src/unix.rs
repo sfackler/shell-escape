@@ -12,7 +12,12 @@ fn non_whitelisted(ch: char) -> bool {
 
 /// Escape characters that may have special meaning in a shell, including spaces.
 pub fn escape(s: Cow<str>) -> Cow<str> {
-    if !s.is_empty() && !s.contains(non_whitelisted) {
+    if s.is_empty() {
+        return "''".to_string().into();
+    }
+
+    let needs_escape = s.chars().any(non_whitelisted);
+    if !needs_escape {
         return s;
     }
 
