@@ -92,7 +92,7 @@ pub mod unix {
 
     fn non_whitelisted(ch: char) -> bool {
         match ch {
-            'a'...'z' | 'A'...'Z' | '0'...'9' | '-' | '_' | '=' | '/' | ',' | '.' | '+' => false,
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '=' | '/' | ',' | '.' | '+' => false,
             _ => true,
         }
     }
@@ -132,4 +132,3 @@ pub mod unix {
         assert_eq!(escape("".into()), r#"''"#);
     }
 }
-
